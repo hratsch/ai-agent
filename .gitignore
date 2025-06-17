@@ -1,2 +1,38 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Distributions
+dist/
+build/
+*.egg
+
+# Virtual environment
 venv/
-.env
+.venv/
+env/
+.env/
+
+# Editor-specific files
+.vscode/ # VS Code settings
+.idea/   # PyCharm/IntelliJ IDEA settings
+
+# OS-specific files
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Sensitive data
+.env # Environment variables
+*.log
+*.sqlite3 # SQLite databases (if used locally)
+
+# Testing
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
