@@ -36,3 +36,5 @@ htmlcov/
 
 # Jupyter Notebook
 .ipynb_checkpoints/
+
+.env
