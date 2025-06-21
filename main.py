@@ -3,6 +3,10 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.run_python_file import run_python_file
+from functions.write_file import write_file
 
 # gets .env var
 load_dotenv()
@@ -121,7 +125,54 @@ available_functions = types.Tool(
 ###
 
 ###
-question = client.models.generate_content(
+func_map = {
+    "get_files_info": get_files_info,
+    "get_file_content": get_file_content,
+    "run_python_file": run_python_file,
+    "write_file": write_file
+}
+###
+
+
+# function
+def call_function(function_call_part, verbose=False):
+    if verbose:
+            print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+            
+    print(f" - Calling function: {function_call_part.name}")
+
+    func_name = function_call_part.name
+
+    if func_name not in func_map:
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=func_name,
+                    response={"error": f"Unknown function: {func_name}"}
+                )
+            ]
+        )
+
+    my_dict = dict(function_call_part.args)
+    # adding working directory manually
+    my_dict["working_directory"] = "./calculator"
+
+    funct_result = func_map[func_name](**my_dict)
+
+    return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=func_name,
+                response={"result": funct_result}
+            )
+        ]
+    )            
+        
+for i in range(20):
+    # response
+    question = client.models.generate_content(
     model=g_model, 
     contents=messages, 
     config=types.GenerateContentConfig(
@@ -129,26 +180,33 @@ question = client.models.generate_content(
         system_instruction=system_prompt
     )
 )
-###
 
-# function
-def call_function(function_call_part, verbose=False):
-    if function_call_part:
-        for parts in function_call_part:
-            if verbose:
-                print(f"Calling function: {parts.name}({parts.args})")
+    if verbose_enabled:
+        print(f"Iteration: {i+1}")
+        print(f"User prompt: {content}")
+        print(f"Prompt tokens: {question.usage_metadata.prompt_token_count}")
+        print(f"Response tokens: {question.usage_metadata.candidates_token_count}")
+
+    if question.candidates:
+        messages.append(question.candidates[0].content)
+
+    if question.function_calls:
+        
+        for function_call_part in question.function_calls:
+            function_call_result = call_function(function_call_part, verbose_enabled)
+            if (
+                not function_call_result.parts
+                or not function_call_result.parts[0].function_response
+            ):
+                raise Exception("empty function call result")
+
+            messages.append(function_call_result)
             
-            print(f" - Calling function: {parts.name}")
+            if verbose_enabled:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
+
         
 
-if verbose_enabled:
-    print(f"User prompt: {content}")
-    print(f"Prompt tokens: {question.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {question.usage_metadata.candidates_token_count}")
-
-
-if question.function_calls:
-    for calls in question.function_calls:
-        print(f"Calling function: {calls.name}({calls.args})")
-else:
-    print(question.text)
+    else:
+        print(question.text)
+        break
