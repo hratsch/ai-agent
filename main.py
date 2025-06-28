@@ -30,7 +30,7 @@ else:
 g_model = "gemini-2.0-flash-001"
 content = sys.argv[1]
 system_prompt = """
-You are a helpful AI coding agent.
+You are a helpful AI coding agent. Your responses should be minimum unless there is a reason to expand your response.
 
 When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
